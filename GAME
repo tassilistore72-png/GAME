@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050714">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nova Strike 3D">
+    <meta name="application-name" content="Nova Strike 3D">
+    <title>NOVA STRIKE 3D // Neon WebGL Space Shooter App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 WebGL Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff007f;
+            --neon-lime: #39ff14;
+            --neon-amber: #ffbe0b;
+            --bg-dark: #060713;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at 50% 20%, #131633 0%, #060713 75%);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 0.06em;
+        }
+
+        /* Neon Glow Utilities */
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 22px rgba(0, 243, 255, 0.4);
+        }
+        .glow-magenta {
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.8), 0 0 22px rgba(255, 0, 127, 0.4);
+        }
+        .glow-amber {
+            text-shadow: 0 0 10px rgba(255, 190, 11, 0.8), 0 0 22px rgba(255, 190, 11, 0.4);
+        }
+
+        /* Arcade Cabinet Frame */
+        .arcade-frame {
+            position: relative;
+            background: #05060f;
+            border: 2px solid rgba(0, 243, 255, 0.45);
+            box-shadow:
+                0 0 25px rgba(0, 243, 255, 0.2),
+                inset 0 0 30px rgba(0, 243, 255, 0.12);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        /* Subtle CRT scanline overlay */
+        .scanlines::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.22) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0.45;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        /* Custom Arcade Buttons */
+        .arcade-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-radius: 0.75rem;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .arcade-btn-cyan {
+            background: linear-gradient(180deg, rgba(0, 243, 255, 0.22) 0%, rgba(0, 140, 255, 0.12) 100%);
+            border: 1.5px solid rgba(0, 243, 255, 0.65);
+            color: #e0faff;
+            box-shadow: 0 4px 0 #005b7f, 0 0 15px rgba(0, 243, 255, 0.25);
+        }
+        .arcade-btn-cyan:hover {
+            background: linear-gradient(180deg, rgba(0, 243, 255, 0.35) 0%, rgba(0, 140, 255, 0.22) 100%);
+            box-shadow: 0 4px 0 #0077a3, 0 0 22px rgba(0, 243, 255, 0.5);
+            transform: translateY(-1px);
+        }
+        .arcade-btn-cyan:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #005b7f, 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .arcade-btn-magenta {
+            background: linear-gradient(180deg, rgba(255, 0, 127, 0.25) 0%, rgba(180, 0, 90, 0.14) 100%);
+            border: 1.5px solid rgba(255, 0, 127, 0.65);
+            color: #ffe0f0;
+            box-shadow: 0 4px 0 #7a003d, 0 0 15px rgba(255, 0, 127, 0.25);
+        }
+        .arcade-btn-magenta:hover {
+            background: linear-gradient(180deg, rgba(255, 0, 127, 0.4) 0%, rgba(180, 0, 90, 0.24) 100%);
+            box-shadow: 0 4px 0 #9e004f, 0 0 22px rgba(255, 0, 127, 0.5);
+            transform: translateY(-1px);
+        }
+        .arcade-btn-magenta:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #7a003d, 0 0 10px rgba(255, 0, 127, 0.3);
+        }
+
+        .arcade-btn-amber {
+            background: linear-gradient(180deg, rgba(255, 190, 11, 0.25) 0%, rgba(217, 119, 6, 0.14) 100%);
+            border: 1.5px solid rgba(255, 190, 11, 0.65);
+            color: #fef3c7;
+            box-shadow: 0 4px 0 #78350f, 0 0 15px rgba(255, 190, 11, 0.25);
+        }
+        .arcade-btn-amber:hover {
+            background: linear-gradient(180deg, rgba(255, 190, 11, 0.38) 0%, rgba(217, 119, 6, 0.24) 100%);
+            box-shadow: 0 4px 0 #92400e, 0 0 22px rgba(255, 190, 11, 0.5);
+            transform: translateY(-1px);
+        }
+        .arcade-btn-amber:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #78350f, 0 0 10px rgba(255, 190, 11, 0.3);
+        }
+
+        /* HUD Stat Pill */
+        .hud-card {
+            background: rgba(11, 15, 34, 0.85);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            backdrop-filter: blur(8px);
+            border-radius: 0.75rem;
+        }
+
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.82; transform: scale(1.03); }
+        }
+        .animate-pulse-slow {
+            animation: pulseSlow 2.4s infinite ease-in-out;
+        }
+
+        /* Native App Virtual Thumbstick & Touch Controls */
+        .joystick-base {
+            width: 108px;
+            height: 108px;
+            border-radius: 9999px;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.14) 0%, rgba(6, 7, 19, 0.78) 75%);
+            border: 2px solid rgba(0, 243, 255, 0.45);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2), inset 0 0 15px rgba(0, 243, 255, 0.15);
+            position: relative;
+            touch-action: none;
+        }
+
+        .joystick-stick {
+            width: 46px;
+            height: 46px;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 35% 35%, #e0faff 0%, #00f3ff 45%, #006699 100%);
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 16px rgba(0, 243, 255, 0.85);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.04s linear;
+            pointer-events: none;
+        }
+
+        .touch-action-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 9999px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            font-size: 9px;
+            letter-spacing: 0.04em;
+            backdrop-filter: blur(6px);
+            touch-action: none;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .touch-action-btn:active {
+            transform: scale(0.90);
+        }
+
+        /* Range Slider Styling */
+        input[type="range"].cyber-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #0f172a;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            outline: none;
+        }
+        input[type="range"].cyber-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00f3ff;
+            box-shadow: 0 0 10px #00f3ff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="p-1.5 sm:p-3 md:p-5">
+
+    <!-- Main App Wrapper -->
+    <div class="w-full max-w-4xl flex flex-col items-center gap-3">
+
+        <!-- TOP HUD BAR (Outside Canvas) -->
+        <header class="w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 hud-card shadow-lg">
+            <!-- Brand & Level -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-400/50 flex items-center justify-center text-cyan-400 shadow-inner">
+                    <i class="fa-solid fa-cube text-lg animate-spin" style="animation-duration: 8s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-arcade text-base sm:text-lg font-black tracking-wider text-cyan-300 glow-cyan leading-none">
+                        NOVA STRIKE <span class="text-fuchsia-400">3D</span>
+                    </h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="hud-level" class="text-xs font-arcade font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-300">
+                            SECTOR 01
+                        </span>
+                        <span id="hud-weapon" class="text-[11px] font-semibold text-amber-300 bg-amber-500/10 border border-amber-400/30 px-2 py-0.5 rounded">
+                            PULSE MK-I
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score / Combo / High Score -->
+            <div class="flex items-center gap-3 sm:gap-6">
+                <div class="text-right">
+                    <div class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Score</div>
+                    <div id="hud-score" class="font-arcade text-lg sm:text-2xl font-extrabold text-white glow-cyan">000000</div>
+                </div>
+
+                <div class="text-center px-2.5 py-1 rounded-lg bg-slate-900/90 border border-amber-400/30">
+                    <div class="text-[10px] uppercase tracking-widest text-amber-300/80 font-semibold">Combo</div>
+                    <div id="hud-combo" class="font-arcade text-sm sm:text-lg font-black text-amber-400 glow-amber">1.0x</div>
+                </div>
+
+                <div class="text-right">
+                    <div class="text-[10px] uppercase tracking-widest text-fuchsia-300/80 font-semibold">Best</div>
+                    <div id="hud-highscore" class="font-arcade text-lg sm:text-2xl font-extrabold text-fuchsia-400 glow-magenta">000000</div>
+                </div>
+            </div>
+
+            <!-- Shield / Lives & Nova Bomb Bar -->
+            <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-4 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                <!-- Hull Integrity -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-arcade text-cyan-300"><i class="fa-solid fa-shield-halved mr-1"></i>HULL</span>
+                    <div id="hud-shields" class="flex items-center gap-1">
+                        <!-- Dynamically populated shield bars -->
+                    </div>
+                </div>
+                <!-- Nova Bombs -->
+                <div class="flex items-center gap-1.5" title="Press SHIFT or B to trigger EMP Nova Bomb">
+                    <span class="text-xs font-arcade text-amber-300"><i class="fa-solid fa-burst mr-1"></i>NOVA</span>
+                    <div id="hud-bombs" class="flex items-center gap-1 text-amber-400">
+                        <!-- Dynamically populated bomb icons -->
+                    </div>
+                </div>
+
+                <!-- Native App Utility Actions (Install, Settings, Fullscreen) -->
+                <div class="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+                    <button id="btn-install-app" class="arcade-btn arcade-btn-amber px-2.5 py-1.5 text-[11px]" title="Install App to Home Screen or Desktop">
+                        <i class="fa-solid fa-download"></i>
+                        <span class="hidden md:inline">INSTALL APP</span>
+                    </button>
+                    <button id="btn-settings" class="arcade-btn arcade-btn-cyan px-2.5 py-1.5 text-xs" title="App Settings & Controls">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <button id="btn-fullscreen" class="arcade-btn arcade-btn-cyan px-2.5 py-1.5 text-xs" title="Toggle Fullscreen App Mode">
+                        <i id="icon-fullscreen" class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- GAME CANVAS CONTAINER -->
+        <main id="canvas-wrapper" class="w-full arcade-frame scanlines relative aspect-[4/3] sm:aspect-[16/10] max-h-[68vh]">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- 2D Floating Combat Text Overlay (Projected from 3D World Space) -->
+            <div id="floating-text-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
+
+            <!-- Camera Angle Hint Pill -->
+            <div class="absolute bottom-2.5 right-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-950/75 border border-cyan-500/30 text-[10px] font-arcade text-cyan-300/80">
+                <i class="fa-solid fa-video"></i>
+                <span id="hud-cam-label">CAM: CHASE 3D (DRAG RIGHT-CLICK OR PRESS C)</span>
+            </div>
+
+            <!-- Boss Health Bar Overlay (Hidden unless Boss is active) -->
+            <div id="boss-hud" class="hidden absolute top-3 left-1/2 -translate-x-1/2 w-11/12 max-w-md z-20 pointer-events-none">
+                <div class="flex justify-between items-center text-xs font-arcade text-rose-400 mb-1 px-1">
+                    <span id="boss-name"><i class="fa-solid fa-skull-crossbones mr-1"></i>DREADNOUGHT CORE</span>
+                    <span id="boss-hp-text">100%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-950/90 rounded-full border border-rose-500/60 p-0.5 overflow-hidden shadow-lg">
+                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-rose-600 via-fuchsia-500 to-amber-400 rounded-full transition-all duration-100" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Banner Notification Overlay (Sector Clear / Boss Incoming) -->
+            <div id="sector-banner" class="hidden absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center w-full px-4">
+                <div id="sector-banner-title" class="font-arcade text-2xl sm:text-4xl font-black text-cyan-300 glow-cyan tracking-widest uppercase">
+                    SECTOR 02
+                </div>
+                <div id="sector-banner-sub" class="font-arcade text-xs sm:text-sm text-amber-300 tracking-wider mt-1 uppercase">
+                    ENEMY SWARM APPROACHING
+                </div>
+            </div>
+
+            <!-- START / PAUSE / GAME OVER MODAL OVERLAY -->
+            <div id="modal-overlay" class="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 transition-opacity duration-200">
+                <div class="max-w-md w-full hud-card p-6 sm:p-8 text-center border-2 border-cyan-400/50 shadow-2xl">
+                    <div id="modal-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-arcade bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 mb-3">
+                        <i class="fa-solid fa-cubes"></i> 3D WEBGL OVERDRIVE EDITION
+                    </div>
+
+                    <h2 id="modal-title" class="font-arcade text-3xl sm:text-4xl font-black text-white glow-cyan mb-2">
+                        NOVA STRIKE 3D
+                    </h2>
+                    <p id="modal-subtitle" class="text-slate-300 text-sm mb-5 leading-relaxed">
+                        Pilot the 3D Neon Interceptor across the cyber-grid. Bank through plasma barrages, collect 3D weapon holocrons, and shatter Sector Dreadnoughts!
+                    </p>
+
+                    <!-- Final Stats Box (Shown on Game Over) -->
+                    <div id="modal-stats" class="hidden grid grid-cols-2 gap-3 mb-6 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <div>
+                            <div class="text-[11px] uppercase text-slate-400">Final Score</div>
+                            <div id="stat-final-score" class="font-arcade text-xl font-bold text-cyan-300">0</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase text-slate-400">Sector Reached</div>
+                            <div id="stat-final-level" class="font-arcade text-xl font-bold text-fuchsia-400">1</div>
+                        </div>
+                    </div>
+
+                    <!-- Controls Guide Grid -->
+                    <div class="grid grid-cols-2 gap-2.5 text-left text-xs bg-slate-900/75 p-3.5 rounded-xl border border-slate-800/90 mb-6">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0">
+                                <i class="fa-solid fa-arrows-up-down-left-right"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-white">Move Ship</div>
+                                <div class="text-slate-400 text-[11px]">WASD / Arrows / Touch</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-500/15 border border-fuchsia-400/40 flex items-center justify-center text-fuchsia-300 shrink-0">
+                                <i class="fa-solid fa-crosshairs"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-white">Blasters</div>
+                                <div class="text-slate-400 text-[11px]">Space / Auto-Fire</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
+                                <i class="fa-solid fa-explosion"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-white">Nova EMP</div>
+                                <div class="text-slate-400 text-[11px]">Shift / 'B' / Button</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-lime-500/15 border border-lime-400/40 flex items-center justify-center text-lime-300 shrink-0">
+                                <i class="fa-solid fa-video"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-white">3D Camera</div>
+                                <div class="text-slate-400 text-[11px]">'C' Key / Right-Drag Orbit</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button id="btn-modal-primary" class="arcade-btn arcade-btn-cyan px-6 py-3.5 text-sm sm:text-base w-full animate-pulse-slow">
+                            <i class="fa-solid fa-play"></i> LAUNCH MISSION
+                        </button>
+                        <button id="btn-modal-restart" class="hidden arcade-btn arcade-btn-magenta px-5 py-3.5 text-sm sm:text-base w-full">
+                            <i class="fa-solid fa-rotate-right"></i> NEW RUN
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NATIVE MOBILE VIRTUAL ANALOG THUMBSTICK & TACTILE ACTION PAD -->
+            <div id="mobile-controls-layer" class="absolute inset-x-0 bottom-3 px-4 flex items-end justify-between pointer-events-none z-20">
+                <!-- Left Virtual Analog Thumbstick -->
+                <div id="joystick-container" class="pointer-events-auto flex flex-col items-center gap-1 opacity-85 hover:opacity-100 transition-opacity">
+                    <div id="joystick-base" class="joystick-base">
+                        <div id="joystick-stick" class="joystick-stick"></div>
+                    </div>
+                    <span class="text-[9px] font-arcade text-cyan-300/80 tracking-widest uppercase">3D THRUST</span>
+                </div>
+
+                <!-- Right Tactile Arcade Action Buttons -->
+                <div class="pointer-events-auto flex items-end gap-2.5 opacity-90 hover:opacity-100 transition-opacity">
+                    <button id="touch-btn-cam" class="touch-action-btn bg-cyan-500/20 border-2 border-cyan-400/70 text-cyan-200 shadow-[0_0_15px_rgba(0,243,255,0.3)]" title="Switch 3D Camera">
+                        <i class="fa-solid fa-video text-sm mb-0.5"></i>
+                        <span>CAM</span>
+                    </button>
+                    <button id="touch-btn-emp" class="touch-action-btn w-16 h-16 bg-amber-500/25 border-2 border-amber-400/80 text-amber-200 shadow-[0_0_18px_rgba(255,190,11,0.45)]" title="Detonate 3D Nova EMP">
+                        <i class="fa-solid fa-burst text-base mb-0.5 text-amber-300"></i>
+                        <span>EMP</span>
+                    </button>
+                    <button id="touch-btn-fire" class="touch-action-btn bg-fuchsia-500/25 border-2 border-fuchsia-400/80 text-fuchsia-200 shadow-[0_0_15px_rgba(255,0,127,0.35)]" title="Hold or Toggle Blasters">
+                        <i class="fa-solid fa-crosshairs text-sm mb-0.5"></i>
+                        <span id="touch-fire-label">AUTO</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- APP SETTINGS DRAWER MODAL -->
+            <div id="settings-modal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+                <div class="max-w-md w-full hud-card p-5 sm:p-6 border-2 border-cyan-400/50 shadow-2xl text-left">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-cyan-400"></i>
+                            <h3 class="font-arcade text-lg font-black text-white glow-cyan">APP SETTINGS</h3>
+                        </div>
+                        <button id="btn-close-settings" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4 text-xs sm:text-sm">
+                        <!-- Master Synthesizer Volume -->
+                        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-arcade text-cyan-300 text-xs"><i class="fa-solid fa-volume-high mr-1.5"></i>SYNTH VOLUME</span>
+                                <span id="setting-vol-label" class="font-arcade text-white text-xs">85%</span>
+                            </div>
+                            <input id="setting-volume" type="range" min="0" max="100" value="85" class="cyber-slider">
+                        </div>
+
+                        <!-- Touch Control Scheme -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <div>
+                                <div class="font-arcade text-white text-xs">CONTROL SCHEME</div>
+                                <div class="text-[11px] text-slate-400">On-screen thumbstick vs direct touch drag</div>
+                            </div>
+                            <button id="setting-control-mode" class="arcade-btn arcade-btn-cyan px-3 py-1.5 text-[11px]">
+                                JOYSTICK + DRAG
+                            </button>
+                        </div>
+
+                        <!-- Haptic Feedback Toggle -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <div>
+                                <div class="font-arcade text-white text-xs">HAPTIC VIBRATION</div>
+                                <div class="text-[11px] text-slate-400">Tactile device pulse on hits & EMP blasts</div>
+                            </div>
+                            <button id="setting-haptics" class="arcade-btn arcade-btn-cyan px-3 py-1.5 text-[11px]">
+                                HAPTICS: ON
+                            </button>
+                        </div>
+
+                        <!-- 3D Graphics Quality -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <div>
+                                <div class="font-arcade text-white text-xs">3D RENDER QUALITY</div>
+                                <div class="text-[11px] text-slate-400">Adjust WebGL pixel density for 60fps</div>
+                            </div>
+                            <button id="setting-graphics" class="arcade-btn arcade-btn-magenta px-3 py-1.5 text-[11px]">
+                                ULTRA (HD)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex justify-end gap-2">
+                        <button id="btn-save-settings" class="arcade-btn arcade-btn-cyan px-5 py-2.5 text-xs w-full">
+                            <i class="fa-solid fa-check"></i> APPLY & RETURN
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INSTALL NATIVE PWA / EXPORT APK MODAL -->
+            <div id="install-modal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+                <div class="max-w-lg w-full hud-card p-5 sm:p-6 border-2 border-amber-400/50 shadow-2xl text-left max-h-[92%] overflow-y-auto">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <img id="app-icon-preview" alt="Nova Strike App Icon" class="w-11 h-11 rounded-xl border border-cyan-400/60 shadow-md" src="https://placehold.co/96x96/050714/00f3ff?text=NS">
+                            <div>
+                                <h3 class="font-arcade text-base sm:text-lg font-black text-white glow-amber">INSTALL NOVA STRIKE 3D</h3>
+                                <p class="text-[11px] text-slate-400">Run fullscreen as a standalone Mobile or Desktop App</p>
+                            </div>
+                        </div>
+                        <button id="btn-close-install" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- One-Click Native Install Prompt Box -->
+                    <div class="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/70 to-fuchsia-950/50 border border-cyan-400/40 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="text-xs">
+                            <div class="font-arcade font-bold text-cyan-300 mb-0.5"><i class="fa-solid fa-bolt mr-1"></i>INSTANT PWA APP INSTALL</div>
+                            <div id="install-status-text" class="text-slate-300 text-[11px]">Web App Manifest & Neon Icon pre-configured for standalone launch.</div>
+                        </div>
+                        <button id="btn-trigger-pwa-install" class="arcade-btn arcade-btn-amber px-4 py-2.5 text-xs shrink-0 w-full sm:w-auto">
+                            <i class="fa-solid fa-download"></i> INSTALL NOW
+                        </button>
+                    </div>
+
+                    <!-- Platform Instructions Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs mb-4">
+                        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                            <div class="font-arcade text-lime-400 font-bold mb-1"><i class="fa-brands fa-android mr-1"></i>ANDROID / APK</div>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">Tap <strong>Chrome Menu (⋮) → Add to Home screen / Install app</strong>, or wrap this single HTML file in Capacitor / Website2APK.</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                            <div class="font-arcade text-cyan-300 font-bold mb-1"><i class="fa-brands fa-apple mr-1"></i>iOS / iPAD</div>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">Open in Safari, tap the <strong>Share icon (↑)</strong> at the bottom, and choose <strong>Add to Home Screen</strong> for full-screen play.</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                            <div class="font-arcade text-fuchsia-400 font-bold mb-1"><i class="fa-solid fa-desktop mr-1"></i>DESKTOP APP</div>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">Click the <strong>Install icon</strong> on the right side of your Chrome/Edge address bar to launch in a dedicated app window.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button id="btn-done-install" class="arcade-btn arcade-btn-cyan px-5 py-2 text-xs">
+                            GOT IT, BACK TO COCKPIT
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast Status Notification -->
+            <div id="app-toast" class="hidden absolute top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-slate-900/95 border border-cyan-400/60 text-cyan-200 font-arcade text-xs shadow-lg pointer-events-none">
+                APP READY
+            </div>
+        </main>
+
+        <!-- BOTTOM CONTROL BAR (Outside Canvas) -->
+        <footer class="w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 hud-card shadow-lg">
+            <!-- Left Primary Game Controls -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button id="btn-pause" class="arcade-btn arcade-btn-cyan px-3.5 py-2 text-xs sm:text-sm" title="Pause or Resume Game (P)">
+                    <i id="icon-pause" class="fa-solid fa-pause"></i>
+                    <span id="text-pause">PAUSE</span>
+                </button>
+
+                <button id="btn-restart" class="arcade-btn arcade-btn-magenta px-3.5 py-2 text-xs sm:text-sm" title="Restart Mission (R)">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>RESTART</span>
+                </button>
+
+                <button id="btn-bomb" class="arcade-btn arcade-btn-amber px-3.5 py-2 text-xs sm:text-sm" title="Trigger Nova EMP Bomb (B or Shift)">
+                    <i class="fa-solid fa-burst"></i>
+                    <span>NOVA EMP</span>
+                </button>
+            </div>
+
+            <!-- Right Audio & Assist Toggles -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button id="btn-camera" class="arcade-btn arcade-btn-cyan px-3 py-2 text-xs sm:text-sm" title="Switch 3D Camera Perspective (C)">
+                    <i class="fa-solid fa-video text-fuchsia-300"></i>
+                    <span id="text-camera">CAM: CHASE</span>
+                </button>
+
+                <button id="btn-autofire" class="arcade-btn arcade-btn-cyan px-3 py-2 text-xs sm:text-sm" title="Toggle Automatic Blasters">
+                    <i class="fa-solid fa-bolt text-amber-300"></i>
+                    <span id="text-autofire">AUTOFIRE: ON</span>
+                </button>
+
+                <button id="btn-sound" class="arcade-btn arcade-btn-cyan px-3 py-2 text-xs sm:text-sm" title="Toggle Web Audio Synthesizer (M)">
+                    <i id="icon-sound" class="fa-solid fa-volume-high text-cyan-300"></i>
+                    <span id="text-sound" class="hidden sm:inline">AUDIO: ON</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * NOVA STRIKE 3D // INSTALLABLE PWA & NATIVE MOBILE/DESKTOP GAME ENGINE
+         * Single-File 3D WebGL Game with Dynamic Manifest, Thumbstick & Haptics
+         * ============================================================================
+         */
+
+        // --- 0. DYNAMIC PWA ICON, MANIFEST & HAPTIC FEEDBACK MANAGER ---
+        let deferredInstallPrompt = null;
+        const appSettings = {
+            volume: 0.85,
+            haptics: true,
+            controlMode: 'BOTH', // 'BOTH' (Joystick + Drag), 'JOYSTICK', 'DRAG'
+            graphicsUltra: true
+        };
+
+        const Haptics = {
+            pulse(pattern) {
+                if (!appSettings.haptics) return;
+                try {
+                    if (navigator.vibrate) navigator.vibrate(pattern);
+                } catch (e) {}
+            },
+            hit() { this.pulse(12); },
+            powerUp() { this.pulse([18, 25, 35]); },
+            emp() { this.pulse([55, 35, 110]); },
+            damage() { this.pulse([85, 40, 95]); }
+        };
+
+        function showAppToast(msg) {
+            const toast = document.getElementById('app-toast');
+            if (!toast) return;
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            clearTimeout(showAppToast._timer);
+            showAppToast._timer = setTimeout(() => toast.classList.add('hidden'), 2400);
+        }
+
+        function bootstrapPWA() {
+            try {
+                // 1. Dynamically render a 512x512 Neon Starfighter App Icon
+                const iconCanvas = document.createElement('canvas');
+                iconCanvas.width = 512;
+                iconCanvas.height = 512;
+                const ictx = iconCanvas.getContext('2d');
+
+                // Deep space background with rounded glow border
+                const bgGrad = ictx.createRadialGradient(256, 256, 40, 256, 256, 260);
+                bgGrad.addColorStop(0, '#141b42');
+                bgGrad.addColorStop(1, '#050714');
+                ictx.fillStyle = bgGrad;
+                ictx.fillRect(0, 0, 512, 512);
+
+                // Cyber grid lines
+                ictx.strokeStyle = 'rgba(0, 243, 255, 0.18)';
+                ictx.lineWidth = 3;
+                for (let i = 64; i < 512; i += 64) {
+                    ictx.beginPath(); ictx.moveTo(i, 0); ictx.lineTo(i, 512); ictx.stroke();
+                    ictx.beginPath(); ictx.moveTo(0, i); ictx.lineTo(512, i); ictx.stroke();
+                }
+
+                // Glowing Outer Ring
+                ictx.strokeStyle = '#00f3ff';
+                ictx.lineWidth = 12;
+                ictx.shadowColor = '#00f3ff';
+                ictx.shadowBlur = 24;
+                ictx.strokeRect(22, 22, 468, 468);
+
+                // Neon Starfighter Silhouette
+                ictx.fillStyle = '#00f3ff';
+                ictx.beginPath();
+                ictx.moveTo(256, 76);
+                ictx.lineTo(396, 384);
+                ictx.lineTo(256, 326);
+                ictx.lineTo(116, 384);
+                ictx.closePath();
+                ictx.fill();
+
+                // Magenta Core Canopy
+                ictx.fillStyle = '#ff007f';
+                ictx.shadowColor = '#ff007f';
+                ictx.beginPath();
+                ictx.moveTo(256, 148);
+                ictx.lineTo(296, 290);
+                ictx.lineTo(256, 268);
+                ictx.lineTo(216, 290);
+                ictx.closePath();
+                ictx.fill();
+
+                const iconDataUrl = iconCanvas.toDataURL('image/png');
+
+                // Set preview image & inject <link rel="icon"> and <link rel="apple-touch-icon">
+                const previewImg = document.getElementById('app-icon-preview');
+                if (previewImg) previewImg.src = iconDataUrl;
+
+                const appleIcon = document.createElement('link');
+                appleIcon.rel = 'apple-touch-icon';
+                appleIcon.href = iconDataUrl;
+                document.head.appendChild(appleIcon);
+
+                const favIcon = document.createElement('link');
+                favIcon.rel = 'icon';
+                favIcon.type = 'image/png';
+                favIcon.href = iconDataUrl;
+                document.head.appendChild(favIcon);
+
+                // 2. Dynamically build and inject Web App Manifest via Blob
+                const manifestObj = {
+                    name: 'Nova Strike: Neon Overdrive 3D',
+                    short_name: 'NovaStrike3D',
+                    description: '3D WebGL Neon Space Shooter Arcade App',
+                    start_url: window.location.href,
+                    display: 'standalone',
+                    orientation: 'any',
+                    background_color: '#050714',
+                    theme_color: '#050714',
+                    categories: ['games', 'arcade', 'action'],
+                    icons: [
+                        { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+                    ]
+                };
+                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                const manifestLink = document.createElement('link');
+                manifestLink.rel = 'manifest';
+                manifestLink.href = URL.createObjectURL(manifestBlob);
+                document.head.appendChild(manifestLink);
+
+                // 3. Register lightweight offline-ready Service Worker where permitted
+                if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+                    const swCode = `
+                        self.addEventListener('install', e => self.skipWaiting());
+                        self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                        self.addEventListener('fetch', e => {});
+                    `;
+                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+                }
+            } catch (err) {}
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const statusEl = document.getElementById('install-status-text');
+            if (statusEl) statusEl.textContent = 'Native install prompt detected! Click INSTALL NOW to add to your device.';
+        });
+
+        // --- 1. WEB AUDIO API SOUND SYNTHESIZER ---
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                        this.masterGain = this.ctx.createGain();
+                        this.masterGain.gain.value = appSettings.volume;
+                        this.masterGain.connect(this.ctx.destination);
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            setVolume(val) {
+                appSettings.volume = Math.max(0, Math.min(1, val));
+                if (this.masterGain && this.ctx) {
+                    this.masterGain.gain.setValueAtTime(appSettings.volume, this.ctx.currentTime);
+                }
+            }
+
+            get dest() {
+                return this.masterGain || (this.ctx && this.ctx.destination);
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                if (this.enabled) this.init();
+                return this.enabled;
+            }
+
+            playLaser(weaponType = 1) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = weaponType >= 3 ? 'sawtooth' : 'triangle';
+                    const startFreq = weaponType === 2 ? 980 : 760;
+                    osc.frequency.setValueAtTime(startFreq, now);
+                    osc.frequency.exponentialRampToValueAtTime(140, now + 0.09);
+
+                    gain.gain.setValueAtTime(0.10, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+                    osc.connect(gain);
+                    gain.connect(this.dest);
+
+                    osc.start(now);
+                    osc.stop(now + 0.09);
+                } catch (e) {}
+            }
+
+            playHit() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(340, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
+
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                    osc.connect(gain);
+                    gain.connect(this.dest);
+
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } catch (e) {}
+            }
+
+            playExplosion(isLarge = false) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const duration = isLarge ? 0.5 : 0.24;
+
+                    const bufferSize = this.ctx.sampleRate * duration;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(isLarge ? 980 : 680, now);
+                    filter.frequency.exponentialRampToValueAtTime(55, now + duration);
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(isLarge ? 0.28 : 0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.dest);
+
+                    noise.start(now);
+                    noise.stop(now + duration);
+                } catch (e) {}
+            }
+
+            playPowerUp() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.055);
+
+                        gain.gain.setValueAtTime(0.14, now + idx * 0.055);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.055 + 0.15);
+
+                        osc.connect(gain);
+                        gain.connect(this.dest);
+                        osc.start(now + idx * 0.055);
+                        osc.stop(now + idx * 0.055 + 0.15);
+                    });
+                } catch (e) {}
+            }
+
+            playNovaBomb() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(460, now);
+                    osc.frequency.exponentialRampToValueAtTime(32, now + 0.7);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+                    osc.connect(gain);
+                    gain.connect(this.dest);
+                    osc.start(now);
+                    osc.stop(now + 0.7);
+                    this.playExplosion(true);
+                } catch (e) {}
+            }
+
+            playGameOver() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const freqs = [392.00, 349.23, 311.13, 261.63];
+                    freqs.forEach((f, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(f, now + i * 0.14);
+
+                        gain.gain.setValueAtTime(0.15, now + i * 0.14);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.25);
+
+                        osc.connect(gain);
+                        gain.connect(this.dest);
+                        osc.start(now + i * 0.14);
+                        osc.stop(now + i * 0.14 + 0.25);
+                    });
+                } catch (e) {}
+            }
+        }
+
+        // --- 2. GAME STATE & 3D ARENA CONFIGURATION ---
+        const canvas = document.getElementById('gameCanvas');
+        const floatingTextLayer = document.getElementById('floating-text-layer');
+        const sound = new SoundEngine();
+
+        const STORAGE_KEY = 'nova_strike_high_score_v1';
+        let highScore = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+
+        // 3D World Bounds (X = Left/Right, Z = Depth Forward/Back, Y = Elevation)
+        const WORLD = {
+            xBound: 36,
+            zMin: -18,
+            zMax: 34,
+            spawnZ: -145,
+            despawnZ: 48
+        };
+
+        const CAMERA_MODES = ['CHASE', 'COCKPIT', 'TACTICAL'];
+
+        const state = {
+            mode: 'MENU', // 'MENU', 'PLAYING', 'PAUSED', 'GAMEOVER'
+            width: 800,
+            height: 500,
+            score: 0,
+            level: 1,
+            combo: 1.0,
+            comboTimer: 0,
+            autoFire: true,
+            cameraModeIndex: 0,
+            camOrbitYaw: 0,
+            camOrbitPitch: 0,
+            isOrbitDragging: false,
+            orbitLastX: 0,
+            orbitLastY: 0,
+            screenShake: 0,
+            waveEnemiesRemaining: 12,
+            spawnTimer: 0,
+            bossActive: false
+        };
+
+        // Keyboard & Pointer Input State
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            KeyA: false,
+            KeyD: false,
+            KeyW: false,
+            KeyS: false,
+            Space: false
+        };
+
+        const pointer = {
+            active: false,
+            ndcX: 0,
+            ndcY: 0,
+            worldX: 0,
+            worldZ: 22
+        };
+
+        // Virtual Analog Thumbstick State
+        const joystick = {
+            active: false,
+            touchId: null,
+            vx: 0,
+            vz: 0,
+            maxRadius: 36
+        };
+
+        // --- 3. THREE.JS SCENE, RENDERER, LIGHTS & ENVIRONMENT ---
+        let scene, camera, renderer;
+        let starGeo, starPoints;
+        let gridGroup, cyberArches = [];
+        let playerLight, explosionLight;
+        let empShockwaves = [];
+
+        // Active 3D Entity Arrays
+        let player = null;
+        let bullets = [];
+        let enemyBullets = [];
+        let enemies = [];
+        let particles = [];
+        let powerUps = [];
+        let floatingTexts = [];
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x04050d);
+            scene.fog = new THREE.FogExp2(0x04050d, 0.0052);
+
+            camera = new THREE.PerspectiveCamera(60, state.width / state.height, 0.1, 500);
+            camera.position.set(0, 22, 48);
+            camera.lookAt(0, 0, -20);
+
+            renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                antialias: true,
+                powerPreference: 'high-performance'
+            });
+            renderer.setSize(state.width, state.height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Ambient & Directional Cyber Lighting
+            const ambientLight = new THREE.AmbientLight(0x223366, 1.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x00f3ff, 1.3);
+            dirLight.position.set(30, 60, 40);
+            scene.add(dirLight);
+
+            const backLight = new THREE.DirectionalLight(0xff007f, 0.9);
+            backLight.position.set(-30, 30, -80);
+            scene.add(backLight);
+
+            // Dynamic Point Light following Player Ship
+            playerLight = new THREE.PointLight(0x00f3ff, 2.0, 38);
+            playerLight.position.set(0, 4, 24);
+            scene.add(playerLight);
+
+            // Dynamic Point Light for Explosions
+            explosionLight = new THREE.PointLight(0xffbe0b, 0, 85);
+            scene.add(explosionLight);
+
+            // Scrolling 3D Neon Cyber-Grid Floor
+            gridGroup = new THREE.Group();
+            const grid1 = new THREE.GridHelper(240, 48, 0xff007f, 0x00f3ff);
+            grid1.position.set(0, -8, -40);
+            grid1.material.transparent = true;
+            grid1.material.opacity = 0.28;
+            gridGroup.add(grid1);
+
+            const grid2 = new THREE.GridHelper(240, 48, 0xff007f, 0x00f3ff);
+            grid2.position.set(0, -8, -280);
+            grid2.material.transparent = true;
+            grid2.material.opacity = 0.28;
+            gridGroup.add(grid2);
+            scene.add(gridGroup);
+
+            // Side Neon Boundary Pillars / Cyber Arches
+            const pillarGeo = new THREE.BoxGeometry(0.8, 18, 0.8);
+            const pillarMatL = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: false });
+            const pillarMatR = new THREE.MeshBasicMaterial({ color: 0xff007f, wireframe: false });
+
+            for (let i = 0; i < 10; i++) {
+                const pair = new THREE.Group();
+                const leftP = new THREE.Mesh(pillarGeo, pillarMatL);
+                leftP.position.set(-WORLD.xBound - 8, 1, 0);
+                const rightP = new THREE.Mesh(pillarGeo, pillarMatR);
+                rightP.position.set(WORLD.xBound + 8, 1, 0);
+
+                pair.add(leftP);
+                pair.add(rightP);
+                pair.position.z = 40 - i * 24;
+                scene.add(pair);
+                cyberArches.push(pair);
+            }
+
+            // 3D Deep Space Volumetric Starfield
+            const starCount = 550;
+            starGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 220;
+                positions[i * 3 + 1] = (Math.random() - 0.3) * 90;
+                positions[i * 3 + 2] = -Math.random() * 260 + 50;
+
+                const c = Math.random() > 0.25
+                    ? new THREE.Color(0xcffafe)
+                    : new THREE.Color(0xff80bf);
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const starMat = new THREE.PointsMaterial({
+                size: 0.9,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.85
+            });
+            starPoints = new THREE.Points(starGeo, starMat);
+            scene.add(starPoints);
+        }
+
+        // --- 4. 3D MESH BUILDERS FOR SHIPS & ENTITIES ---
+        function buildPlayerShipMesh() {
+            const group = new THREE.Group();
+
+            // Main Fuselage
+            const hullGeo = new THREE.ConeGeometry(1.6, 7.2, 6);
+            hullGeo.rotateX(-Math.PI / 2);
+            const hullMat = new THREE.MeshStandardMaterial({
+                color: 0x0b192e,
+                emissive: 0x004466,
+                roughness: 0.25,
+                metalness: 0.8
+            });
+            const hull = new THREE.Mesh(hullGeo, hullMat);
+            group.add(hull);
+
+            // Wireframe Neon Hull Overlay
+            const wireMat = new THREE.MeshBasicMaterial({
+                color: 0x00f3ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.65
+            });
+            const hullWire = new THREE.Mesh(hullGeo.clone(), wireMat);
+            hullWire.scale.setScalar(1.03);
+            group.add(hullWire);
+
+            // Swept Cyber Wings
+            const wingGeo = new THREE.BoxGeometry(7.6, 0.25, 2.4);
+            const wingMat = new THREE.MeshStandardMaterial({
+                color: 0x102340,
+                emissive: 0x0088aa,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            const wings = new THREE.Mesh(wingGeo, wingMat);
+            wings.position.set(0, -0.1, 1.0);
+            group.add(wings);
+
+            // Wingtip Laser Pods
+            const podGeo = new THREE.CylinderGeometry(0.25, 0.35, 3.4, 8);
+            podGeo.rotateX(Math.PI / 2);
+            const podMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+            const leftPod = new THREE.Mesh(podGeo, podMat);
+            leftPod.position.set(-3.7, 0, 0.5);
+            const rightPod = new THREE.Mesh(podGeo, podMat);
+            rightPod.position.set(3.7, 0, 0.5);
+            group.add(leftPod, rightPod);
+
+            // Glowing Magenta Cockpit Canopy
+            const canopyGeo = new THREE.OctahedronGeometry(0.95, 0);
+            canopyGeo.scale(0.85, 0.65, 2.0);
+            const canopyMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
+            const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+            canopy.position.set(0, 0.65, -0.2);
+            group.add(canopy);
+
+            // Twin Thruster Flame Cones
+            const flameGeo = new THREE.ConeGeometry(0.55, 2.6, 8);
+            flameGeo.rotateX(Math.PI / 2);
+            const flameMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+            const leftFlame = new THREE.Mesh(flameGeo, flameMat);
+            leftFlame.position.set(-0.9, -0.1, 4.2);
+            const rightFlame = new THREE.Mesh(flameGeo, flameMat);
+            rightFlame.position.set(0.9, -0.1, 4.2);
+            group.add(leftFlame, rightFlame);
+
+            // 3D Geodesic Energy Shield Sphere
+            const shieldGeo = new THREE.IcosahedronGeometry(4.6, 1);
+            const shieldMat = new THREE.MeshBasicMaterial({
+                color: 0x00f3ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.14
+            });
+            const shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+            group.add(shieldMesh);
+
+            group.userData = { leftFlame, rightFlame, shieldMesh, shieldMat };
+            return group;
+        }
+
+        function buildEnemyMesh(type) {
+            const group = new THREE.Group();
+
+            if (type === 'SCOUT') {
+                const coreGeo = new THREE.OctahedronGeometry(1.7, 0);
+                const coreMat = new THREE.MeshStandardMaterial({
+                    color: 0x082032,
+                    emissive: 0x00f3ff,
+                    emissiveIntensity: 0.7,
+                    roughness: 0.2
+                });
+                const core = new THREE.Mesh(coreGeo, coreMat);
+                group.add(core);
+
+                const ringGeo = new THREE.TorusGeometry(2.3, 0.18, 6, 16);
+                ringGeo.rotateX(Math.PI / 2);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                group.add(ring);
+                group.userData.spinPart = core;
+
+            } else if (type === 'INTERCEPTOR') {
+                const bodyGeo = new THREE.ConeGeometry(1.8, 5.5, 4);
+                bodyGeo.rotateX(Math.PI / 2);
+                const bodyMat = new THREE.MeshStandardMaterial({
+                    color: 0x2b0922,
+                    emissive: 0xff007f,
+                    emissiveIntensity: 0.65,
+                    metalness: 0.7
+                });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                group.add(body);
+
+                const wingGeo = new THREE.BoxGeometry(5.8, 0.25, 1.8);
+                const wingMat = new THREE.MeshBasicMaterial({ color: 0xff007f, wireframe: true });
+                const wing = new THREE.Mesh(wingGeo, wingMat);
+                group.add(wing);
+                group.userData.spinPart = wing;
+
+            } else if (type === 'CRUISER') {
+                const hullGeo = new THREE.BoxGeometry(5.2, 2.2, 6.2);
+                const hullMat = new THREE.MeshStandardMaterial({
+                    color: 0x291d06,
+                    emissive: 0xffbe0b,
+                    emissiveIntensity: 0.45,
+                    metalness: 0.8
+                });
+                const hull = new THREE.Mesh(hullGeo, hullMat);
+                group.add(hull);
+
+                const wireGeo = new THREE.BoxGeometry(5.4, 2.4, 6.4);
+                const wireMat = new THREE.MeshBasicMaterial({ color: 0xffbe0b, wireframe: true });
+                group.add(new THREE.Mesh(wireGeo, wireMat));
+
+                const turretGeo = new THREE.OctahedronGeometry(1.4, 0);
+                const turretMat = new THREE.MeshBasicMaterial({ color: 0xff5500 });
+                const turret = new THREE.Mesh(turretGeo, turretMat);
+                turret.position.y = 1.6;
+                group.add(turret);
+                group.userData.spinPart = turret;
+
+            } else if (type === 'BOSS') {
+                // Massive 3D Sector Dreadnought Capital Ship
+                const coreGeo = new THREE.IcosahedronGeometry(4.5, 1);
+                const coreMat = new THREE.MeshStandardMaterial({
+                    color: 0x3b041c,
+                    emissive: 0xff0055,
+                    emissiveIntensity: 0.8,
+                    wireframe: false
+                });
+                const core = new THREE.Mesh(coreGeo, coreMat);
+                group.add(core);
+
+                const cageGeo = new THREE.IcosahedronGeometry(5.2, 1);
+                const cageMat = new THREE.MeshBasicMaterial({ color: 0xffbe0b, wireframe: true });
+                const cage = new THREE.Mesh(cageGeo, cageMat);
+                group.add(cage);
+
+                // Heavy Dreadnought Wings
+                const wingGeo = new THREE.BoxGeometry(18, 1.4, 4.5);
+                const wingMat = new THREE.MeshStandardMaterial({
+                    color: 0x1a0926,
+                    emissive: 0x990044,
+                    metalness: 0.9
+                });
+                const wings = new THREE.Mesh(wingGeo, wingMat);
+                group.add(wings);
+
+                // Rotating Energy Gyro Ring
+                const gyroGeo = new THREE.TorusGeometry(7.2, 0.35, 8, 28);
+                gyroGeo.rotateX(Math.PI / 2);
+                const gyroMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+                const gyro = new THREE.Mesh(gyroGeo, gyroMat);
+                group.add(gyro);
+
+                group.userData.spinPart = cage;
+                group.userData.gyroPart = gyro;
+            }
+
+            return group;
+        }
+
+        // --- 5. PLAYER 3D CLASS ---
+        class Player3D {
+            constructor() {
+                this.radius = 2.6;
+                this.x = 0;
+                this.y = 0;
+                this.z = 24;
+                this.speed = 46;
+                this.maxShields = 4;
+                this.shields = 4;
+                this.bombs = 2;
+                this.weaponLevel = 1;
+                this.fireCooldown = 0;
+                this.invulnTimer = 0;
+                this.bankAngle = 0;
+                this.pitchAngle = 0;
+
+                this.mesh = buildPlayerShipMesh();
+                this.mesh.position.set(this.x, this.y, this.z);
+                scene.add(this.mesh);
+            }
+
+            destroy() {
+                if (this.mesh) {
+                    scene.remove(this.mesh);
+                    this.mesh = null;
+                }
+            }
+
+            update(dt) {
+                let dx = 0;
+                let dz = 0;
+
+                if (keys.ArrowLeft || keys.KeyA) dx -= 1;
+                if (keys.ArrowRight || keys.KeyD) dx += 1;
+                if (keys.ArrowUp || keys.KeyW) dz -= 1;
+                if (keys.ArrowDown || keys.KeyS) dz += 1;
+
+                if (joystick.active) {
+                    dx = joystick.vx;
+                    dz = joystick.vz;
+                    this.x += dx * this.speed * dt;
+                    this.z += dz * this.speed * dt;
+
+                    const targetBank = -dx * 0.62;
+                    const targetPitch = -dz * 0.25;
+                    this.bankAngle += (targetBank - this.bankAngle) * Math.min(1, dt * 14);
+                    this.pitchAngle += (targetPitch - this.pitchAngle) * Math.min(1, dt * 14);
+                } else if (pointer.active && appSettings.controlMode !== 'JOYSTICK') {
+                    const diffX = pointer.worldX - this.x;
+                    const diffZ = pointer.worldZ - this.z;
+                    this.x += diffX * Math.min(1, dt * 12);
+                    this.z += diffZ * Math.min(1, dt * 12);
+                    this.bankAngle = Math.max(-0.65, Math.min(0.65, -diffX * 0.08));
+                    this.pitchAngle = Math.max(-0.3, Math.min(0.3, -diffZ * 0.04));
+                } else {
+                    if (dx !== 0 && dz !== 0) {
+                        const inv = 1 / Math.hypot(dx, dz);
+                        dx *= inv;
+                        dz *= inv;
+                    }
+                    this.x += dx * this.speed * dt;
+                    this.z += dz * this.speed * dt;
+
+                    const targetBank = -dx * 0.58;
+                    const targetPitch = -dz * 0.22;
+                    this.bankAngle += (targetBank - this.bankAngle) * Math.min(1, dt * 12);
+                    this.pitchAngle += (targetPitch - this.pitchAngle) * Math.min(1, dt * 12);
+                }
+
+                // Clamp within 3D Arena
+                this.x = Math.max(-WORLD.xBound, Math.min(WORLD.xBound, this.x));
+                this.z = Math.max(WORLD.zMin, Math.min(WORLD.zMax, this.z));
+
+                // Subtle 3D hover oscillation
+                this.y = Math.sin(performance.now() * 0.005) * 0.35;
+
+                // Apply 3D Transform & Banking/Pitching
+                this.mesh.position.set(this.x, this.y, this.z);
+                this.mesh.rotation.z = this.bankAngle;
+                this.mesh.rotation.x = this.pitchAngle;
+
+                // Update dynamic point light
+                playerLight.position.set(this.x, this.y + 3, this.z);
+
+                // Animate Thruster Cones & Energy Shield
+                const { leftFlame, rightFlame, shieldMesh, shieldMat } = this.mesh.userData;
+                const flicker = 0.8 + Math.random() * 0.65;
+                leftFlame.scale.set(1, 1, flicker);
+                rightFlame.scale.set(1, 1, flicker);
+
+                shieldMesh.rotation.y += dt * 1.5;
+                shieldMesh.rotation.x += dt * 0.8;
+
+                if (this.invulnTimer > 0) {
+                    this.invulnTimer -= dt;
+                    shieldMat.opacity = 0.35 + Math.sin(performance.now() * 0.03) * 0.25;
+                } else {
+                    shieldMat.opacity = 0.1;
+                }
+
+                // Spawn 3D Thruster Exhaust Particles
+                if (Math.random() < 0.7) {
+                    spawn3DParticle(
+                        this.x + (Math.random() - 0.5) * 1.6,
+                        this.y,
+                        this.z + 4.4,
+                        (Math.random() - 0.5) * 4,
+                        (Math.random() - 0.5) * 4,
+                        32 + Math.random() * 18,
+                        0x00f3ff,
+                        0.22,
+                        0.32
+                    );
+                }
+
+                // Weapon Firing
+                this.fireCooldown -= dt;
+                if ((state.autoFire || keys.Space || pointer.active) && this.fireCooldown <= 0) {
+                    this.shoot();
+                }
+            }
+
+            shoot() {
+                sound.playLaser(this.weaponLevel);
+
+                if (this.weaponLevel === 1) {
+                    this.fireCooldown = 0.16;
+                    this.spawnLaser(this.x - 2.2, this.z - 2.0, 0, -135, 0x00f3ff, 1);
+                    this.spawnLaser(this.x + 2.2, this.z - 2.0, 0, -135, 0x00f3ff, 1);
+                } else if (this.weaponLevel === 2) {
+                    this.fireCooldown = 0.16;
+                    this.spawnLaser(this.x, this.z - 2.8, 0, -145, 0x00f3ff, 1.25);
+                    this.spawnLaser(this.x - 2.4, this.z - 1.8, -26, -138, 0x39ff14, 1);
+                    this.spawnLaser(this.x + 2.4, this.z - 1.8, 26, -138, 0x39ff14, 1);
+                } else if (this.weaponLevel === 3) {
+                    this.fireCooldown = 0.10;
+                    this.spawnLaser(this.x - 2.4, this.z - 2.2, 0, -160, 0xff007f, 1.4);
+                    this.spawnLaser(this.x + 2.4, this.z - 2.2, 0, -160, 0xff007f, 1.4);
+                } else {
+                    // Level 4: 5-Way Hyper Overdrive
+                    this.fireCooldown = 0.13;
+                    const angles = [-0.30, -0.15, 0, 0.15, 0.30];
+                    angles.forEach(ang => {
+                        this.spawnLaser(
+                            this.x,
+                            this.z - 2.4,
+                            Math.sin(ang) * 150,
+                            -Math.cos(ang) * 150,
+                            Math.abs(ang) < 0.08 ? 0xffbe0b : 0x00f3ff,
+                            1.3
+                        );
+                    });
+                }
+            }
+
+            spawnLaser(x, z, vx, vz, colorHex, dmg) {
+                const geo = new THREE.CylinderGeometry(0.24, 0.24, 3.6, 6);
+                geo.rotateX(Math.PI / 2);
+                const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, this.y, z);
+                mesh.rotation.y = Math.atan2(-vx, -vz);
+                scene.add(mesh);
+
+                bullets.push({
+                    mesh,
+                    x,
+                    y: this.y,
+                    z,
+                    vx,
+                    vz,
+                    dmg,
+                    radius: 1.0
+                });
+            }
+        }
+
+        // --- 6. 3D ENEMY, PARTICLE & POWERUP SPAWNERS ---
+        function spawnEnemy() {
+            const rand = Math.random();
+            let type = 'SCOUT';
+            if (state.level >= 2 && rand > 0.52) type = 'INTERCEPTOR';
+            if (state.level >= 3 && rand > 0.80) type = 'CRUISER';
+
+            const x = (Math.random() - 0.5) * (WORLD.xBound * 1.8);
+            const z = WORLD.spawnZ;
+            const hpScale = 1 + (state.level - 1) * 0.32;
+            const mesh = buildEnemyMesh(type);
+            mesh.position.set(x, 0, z);
+            scene.add(mesh);
+
+            if (type === 'SCOUT') {
+                enemies.push({
+                    type,
+                    mesh,
+                    x,
+                    y: 0,
+                    z,
+                    vx: (Math.random() > 0.5 ? 1 : -1) * 16,
+                    vz: 26 + state.level * 2.2,
+                    radius: 2.3,
+                    hp: Math.ceil(2 * hpScale),
+                    maxHp: Math.ceil(2 * hpScale),
+                    color: '#00f3ff',
+                    colorHex: 0x00f3ff,
+                    points: 100,
+                    shootTimer: 1.4 + Math.random(),
+                    age: 0
+                });
+            } else if (type === 'INTERCEPTOR') {
+                enemies.push({
+                    type,
+                    mesh,
+                    x,
+                    y: 0,
+                    z,
+                    vx: 0,
+                    vz: 24 + state.level * 2.0,
+                    radius: 2.6,
+                    hp: Math.ceil(4 * hpScale),
+                    maxHp: Math.ceil(4 * hpScale),
+                    color: '#ff007f',
+                    colorHex: 0xff007f,
+                    points: 220,
+                    shootTimer: 1.1 + Math.random() * 0.7,
+                    age: 0
+                });
+            } else {
+                enemies.push({
+                    type: 'CRUISER',
+                    mesh,
+                    x,
+                    y: 0,
+                    z,
+                    vx: (Math.random() - 0.5) * 12,
+                    vz: 15 + state.level * 1.4,
+                    radius: 3.8,
+                    hp: Math.ceil(9 * hpScale),
+                    maxHp: Math.ceil(9 * hpScale),
+                    color: '#ffbe0b',
+                    colorHex: 0xffbe0b,
+                    points: 450,
+                    shootTimer: 1.4,
+                    age: 0
+                });
+            }
+        }
+
+        function spawnBoss() {
+            state.bossActive = true;
+            const maxHp = 50 + state.level * 30;
+            const mesh = buildEnemyMesh('BOSS');
+            mesh.position.set(0, 1, WORLD.spawnZ);
+            scene.add(mesh);
+
+            enemies.push({
+                type: 'BOSS',
+                mesh,
+                x: 0,
+                y: 1,
+                z: WORLD.spawnZ,
+                vx: 22,
+                vz: 25,
+                radius: 7.5,
+                hp: maxHp,
+                maxHp: maxHp,
+                color: '#ff0055',
+                colorHex: 0xff0055,
+                points: 2500,
+                shootTimer: 1.0,
+                age: 0
+            });
+
+            document.getElementById('boss-hud').classList.remove('hidden');
+            document.getElementById('boss-name').innerHTML = `<i class="fa-solid fa-skull-crossbones mr-1"></i>SECTOR ${state.level} 3D DREADNOUGHT`;
+            updateBossHUD(maxHp, maxHp);
+            showSectorBanner(`WARNING: DREADNOUGHT`, `SECTOR ${state.level} GUARDIAN ENGAGED`);
+        }
+
+        function spawnEnemyBullet(x, z, vx, vz, colorHex, radius = 0.85) {
+            const geo = new THREE.OctahedronGeometry(radius, 0);
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, 0, z);
+            scene.add(mesh);
+
+            enemyBullets.push({
+                mesh,
+                x,
+                y: 0,
+                z,
+                vx,
+                vz,
+                radius
+            });
+        }
+
+        function spawn3DParticle(x, y, z, vx, vy, vz, colorHex, life = 0.45, size = 0.55) {
+            const geo = new THREE.BoxGeometry(size, size, size);
+            const mat = new THREE.MeshBasicMaterial({
+                color: colorHex,
+                transparent: true,
+                opacity: 1
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+            scene.add(mesh);
+
+            particles.push({
+                mesh,
+                vx,
+                vy,
+                vz,
+                life,
+                maxLife: life
+            });
+        }
+
+        function create3DExplosion(x, y, z, colorHex, count = 22, isLarge = false) {
+            sound.playExplosion(isLarge);
+            if (isLarge) state.screenShake = 1.6;
+
+            // Flash dynamic 3D explosion point light
+            explosionLight.color.setHex(colorHex);
+            explosionLight.position.set(x, y + 4, z);
+            explosionLight.intensity = isLarge ? 6.5 : 3.2;
+
+            // Expanding 3D Shockwave Ring
+            const ringGeo = new THREE.RingGeometry(0.5, isLarge ? 2.2 : 1.2, 24);
+            ringGeo.rotateX(-Math.PI / 2);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: colorHex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.position.set(x, y, z);
+            scene.add(ringMesh);
+            empShockwaves.push({
+                mesh: ringMesh,
+                rate: isLarge ? 42 : 22,
+                life: 0.45,
+                maxLife: 0.45
+            });
+
+            // Volumetric 3D Shards
+            for (let i = 0; i < count; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = (Math.random() - 0.5) * Math.PI;
+                const speed = 12 + Math.random() * (isLarge ? 48 : 28);
+                spawn3DParticle(
+                    x,
+                    y,
+                    z,
+                    Math.cos(theta) * Math.cos(phi) * speed,
+                    Math.sin(phi) * speed,
+                    Math.sin(theta) * Math.cos(phi) * speed,
+                    colorHex,
+                    0.35 + Math.random() * 0.45,
+                    isLarge ? 0.95 : 0.6
+                );
+            }
+        }
+
+        function maybeSpawnPowerUp(x, z) {
+            if (Math.random() > 0.25) return;
+            const types = [
+                { id: 'WEAPON', label: 'UPGRADE', color: '#39ff14', hex: 0x39ff14 },
+                { id: 'SHIELD', label: 'SHIELD+', color: '#00f3ff', hex: 0x00f3ff },
+                { id: 'BOMB', label: 'NOVA+1', color: '#ffbe0b', hex: 0xffbe0b }
+            ];
+            const choice = types[Math.floor(Math.random() * types.length)];
+
+            // Build 3D Rotating Holocron Power-Up
+            const group = new THREE.Group();
+            const core = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.3, 0),
+                new THREE.MeshBasicMaterial({ color: choice.hex })
+            );
+            const gimbal = new THREE.Mesh(
+                new THREE.TorusGeometry(2.0, 0.16, 8, 20),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            group.add(core, gimbal);
+            group.position.set(x, 0, z);
+            scene.add(group);
+
+            powerUps.push({
+                mesh: group,
+                x,
+                y: 0,
+                z,
+                vz: 18,
+                radius: 2.3,
+                ...choice
+            });
+        }
+
+        // Project 3D world coordinates to 2D Floating Combat Text
+        function addFloatingText3D(x, y, z, text, color = '#00f3ff') {
+            const el = document.createElement('div');
+            el.className = 'font-arcade font-extrabold text-xs sm:text-sm pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 transition-opacity';
+            el.style.color = color;
+            el.style.textShadow = `0 0 10px ${color}`;
+            el.textContent = text;
+            floatingTextLayer.appendChild(el);
+
+            floatingTexts.push({
+                el,
+                x,
+                y: y + 2,
+                z,
+                life: 0.9,
+                maxLife: 0.9
+            });
+        }
+
+        // --- 7. HUD & GAME MECHANICS ---
+        function updateHUD() {
+            document.getElementById('hud-score').textContent = String(Math.floor(state.score)).padStart(6, '0');
+            document.getElementById('hud-highscore').textContent = String(Math.floor(highScore)).padStart(6, '0');
+            document.getElementById('hud-level').textContent = `SECTOR ${String(state.level).padStart(2, '0')}`;
+            document.getElementById('hud-combo').textContent = `${state.combo.toFixed(1)}x`;
+
+            const weaponNames = ['PULSE MK-I', 'SPREAD MK-II', 'PLASMA MK-III', 'OVERDRIVE MAX'];
+            const wName = player ? weaponNames[Math.min(player.weaponLevel - 1, 3)] : 'PULSE MK-I';
+            document.getElementById('hud-weapon').textContent = wName;
+
+            const shieldContainer = document.getElementById('hud-shields');
+            shieldContainer.innerHTML = '';
+            const maxS = player ? player.maxShields : 4;
+            const curS = player ? player.shields : 4;
+            for (let i = 0; i < maxS; i++) {
+                const bar = document.createElement('div');
+                bar.className = `w-3.5 h-3 rounded-sm transition-all ${
+                    i < curS
+                        ? 'bg-cyan-400 shadow-[0_0_8px_#00f3ff]'
+                        : 'bg-slate-800 border border-slate-700'
+                }`;
+                shieldContainer.appendChild(bar);
+            }
+
+            const bombContainer = document.getElementById('hud-bombs');
+            bombContainer.innerHTML = '';
+            const bombs = player ? player.bombs : 2;
+            for (let i = 0; i < 3; i++) {
+                const icon = document.createElement('i');
+                icon.className = `fa-solid fa-circle-radiation text-xs ${
+                    i < bombs ? 'text-amber-400 glow-amber' : 'text-slate-700'
+                }`;
+                bombContainer.appendChild(icon);
+            }
+        }
+
+        function updateBossHUD(hp, maxHp) {
+            const pct = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
+            document.getElementById('boss-hp-text').textContent = `${pct}%`;
+            document.getElementById('boss-hp-bar').style.width = `${pct}%`;
+        }
+
+        function showSectorBanner(title, subtitle) {
+            const banner = document.getElementById('sector-banner');
+            document.getElementById('sector-banner-title').textContent = title;
+            document.getElementById('sector-banner-sub').textContent = subtitle;
+            banner.classList.remove('hidden');
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 2200);
+        }
+
+        function triggerNovaBomb() {
+            if (state.mode !== 'PLAYING' || !player || player.bombs <= 0) return;
+            player.bombs--;
+            sound.playNovaBomb();
+            Haptics.emp();
+            state.screenShake = 2.4;
+
+            // Giant 3D Expanding EMP Torus Wave
+            const empGeo = new THREE.TorusGeometry(2.5, 0.6, 12, 40);
+            empGeo.rotateX(Math.PI / 2);
+            const empMat = new THREE.MeshBasicMaterial({
+                color: 0x00f3ff,
+                transparent: true,
+                opacity: 0.95
+            });
+            const empMesh = new THREE.Mesh(empGeo, empMat);
+            empMesh.position.set(player.x, player.y, player.z);
+            scene.add(empMesh);
+            empShockwaves.push({
+                mesh: empMesh,
+                rate: 115,
+                life: 0.75,
+                maxLife: 0.75
+            });
+
+            // Vaporize all enemy projectiles
+            for (const eb of enemyBullets) scene.remove(eb.mesh);
+            enemyBullets = [];
+
+            // Damage all active 3D enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.hp -= 18;
+                create3DExplosion(e.x, e.y, e.z, 0xffbe0b, 14, false);
+                if (e.hp <= 0) {
+                    handleEnemyDefeat(e, i);
+                } else if (e.type === 'BOSS') {
+                    updateBossHUD(e.hp, e.maxHp);
+                }
+            }
+            addFloatingText3D(player.x, player.y + 3, player.z, '3D NOVA EMP UNLEASHED!', '#ffbe0b');
+            updateHUD();
+        }
+
+        function handleEnemyDefeat(e, index) {
+            const gained = Math.round(e.points * state.combo);
+            state.score += gained;
+            Haptics.hit();
+            if (state.score > highScore) {
+                highScore = state.score;
+                localStorage.setItem(STORAGE_KEY, String(highScore));
+            }
+
+            state.combo = Math.min(8.0, +(state.combo + 0.2).toFixed(1));
+            state.comboTimer = 4.0;
+
+            create3DExplosion(
+                e.x,
+                e.y,
+                e.z,
+                e.colorHex,
+                e.type === 'BOSS' ? 55 : 22,
+                e.type === 'BOSS' || e.type === 'CRUISER'
+            );
+            addFloatingText3D(e.x, e.y, e.z, `+${gained}`, e.color);
+            maybeSpawnPowerUp(e.x, e.z);
+
+            if (e.type === 'BOSS') {
+                state.bossActive = false;
+                document.getElementById('boss-hud').classList.add('hidden');
+                state.waveEnemiesRemaining = 0;
+            } else {
+                state.waveEnemiesRemaining--;
+            }
+
+            scene.remove(e.mesh);
+            enemies.splice(index, 1);
+
+            if (state.waveEnemiesRemaining <= 0 && enemies.length === 0 && !state.bossActive) {
+                advanceLevel();
+            }
+            updateHUD();
+        }
+
+        function advanceLevel() {
+            state.level++;
+            sound.playPowerUp();
+
+            if (state.level % 3 === 0) {
+                state.waveEnemiesRemaining = 1;
+                spawnBoss();
+            } else {
+                state.waveEnemiesRemaining = 10 + state.level * 4;
+                showSectorBanner(`SECTOR ${String(state.level).padStart(2, '0')}`, `3D SWARM VELOCITY INCREASED`);
+            }
+            updateHUD();
+        }
+
+        function damagePlayer() {
+            player.shields--;
+            player.invulnTimer = 1.6;
+            state.combo = 1.0;
+            state.screenShake = 2.0;
+            Haptics.damage();
+            if (player.weaponLevel > 1) player.weaponLevel--;
+            create3DExplosion(player.x, player.y, player.z, 0xff007f, 28, true);
+            updateHUD();
+
+            if (player.shields <= 0) {
+                triggerGameOver();
+            }
+        }
+
+        // --- 8. MAIN 3D SIMULATION & CAMERA UPDATE LOOP ---
+        function update3DCamera(dt) {
+            const mode = CAMERA_MODES[state.cameraModeIndex];
+            const px = player ? player.x : 0;
+            const pz = player ? player.z : 24;
+
+            let targetPos = new THREE.Vector3();
+            let lookTarget = new THREE.Vector3();
+
+            if (mode === 'CHASE') {
+                targetPos.set(
+                    px * 0.68 + Math.sin(state.camOrbitYaw) * 18,
+                    16 + state.camOrbitPitch * 12,
+                    pz + 20
+                );
+                lookTarget.set(px * 0.45, 0, pz - 32);
+            } else if (mode === 'COCKPIT') {
+                targetPos.set(px, 2.5, pz - 0.5);
+                lookTarget.set(px + Math.sin(state.camOrbitYaw) * 12, 0.5 - state.camOrbitPitch * 6, pz - 60);
+            } else {
+                // TACTICAL (Elevated Angled Arcade Cam)
+                targetPos.set(px * 0.25 + Math.sin(state.camOrbitYaw) * 24, 48 + state.camOrbitPitch * 14, pz + 32);
+                lookTarget.set(0, 0, -22);
+            }
+
+            if (state.screenShake > 0) {
+                state.screenShake = Math.max(0, state.screenShake - dt * 4.5);
+                targetPos.x += (Math.random() - 0.5) * state.screenShake;
+                targetPos.y += (Math.random() - 0.5) * state.screenShake;
+            }
+
+            camera.position.lerp(targetPos, Math.min(1, dt * 10));
+            camera.lookAt(lookTarget);
+        }
+
+        function updateEnvironment3D(dt) {
+            const speedMult = state.mode === 'PLAYING' ? 52 : 18;
+
+            // Scroll 3D Grid Floor
+            gridGroup.position.z += speedMult * dt;
+            if (gridGroup.position.z >= 240) {
+                gridGroup.position.z -= 240;
+            }
+
+            // Scroll Side Cyber Pillars
+            for (const arch of cyberArches) {
+                arch.position.z += speedMult * dt;
+                if (arch.position.z > 55) {
+                    arch.position.z -= 240;
+                }
+            }
+
+            // Scroll 3D Volumetric Stars
+            const posAttr = starGeo.getAttribute('position');
+            for (let i = 0; i < posAttr.count; i++) {
+                let z = posAttr.getZ(i) + speedMult * 1.4 * dt;
+                if (z > 55) z -= 260;
+                posAttr.setZ(i, z);
+            }
+            posAttr.needsUpdate = true;
+
+            // Decay Explosion Light
+            if (explosionLight.intensity > 0) {
+                explosionLight.intensity = Math.max(0, explosionLight.intensity - dt * 15);
+            }
+        }
+
+        function updateGame(dt) {
+            updateEnvironment3D(dt);
+            update3DCamera(dt);
+
+            if (state.mode !== 'PLAYING') return;
+
+            // Combo Timer
+            if (state.comboTimer > 0) {
+                state.comboTimer -= dt;
+                if (state.comboTimer <= 0 && state.combo > 1.0) {
+                    state.combo = 1.0;
+                    updateHUD();
+                }
+            }
+
+            player.update(dt);
+
+            // Spawn Enemies
+            if (!state.bossActive && enemies.length < 5 + Math.floor(state.level / 2) && state.waveEnemiesRemaining > enemies.length) {
+                state.spawnTimer -= dt;
+                if (state.spawnTimer <= 0) {
+                    spawnEnemy();
+                    state.spawnTimer = Math.max(0.45, 1.3 - state.level * 0.08);
+                }
+            }
+
+            // Update Player 3D Laser Bolts
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.x += b.vx * dt;
+                b.z += b.vz * dt;
+                b.mesh.position.set(b.x, b.y, b.z);
+
+                if (b.z < WORLD.spawnZ - 15 || Math.abs(b.x) > WORLD.xBound + 20) {
+                    scene.remove(b.mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Update Enemy 3D Plasma Bolts
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const eb = enemyBullets[i];
+                eb.x += eb.vx * dt;
+                eb.z += eb.vz * dt;
+                eb.mesh.position.set(eb.x, eb.y, eb.z);
+                eb.mesh.rotation.x += dt * 6;
+                eb.mesh.rotation.y += dt * 6;
+
+                if (player.invulnTimer <= 0 && Math.hypot(eb.x - player.x, eb.z - player.z) < eb.radius + player.radius - 0.4) {
+                    scene.remove(eb.mesh);
+                    enemyBullets.splice(i, 1);
+                    damagePlayer();
+                    continue;
+                }
+
+                if (eb.z > WORLD.despawnZ || eb.z < WORLD.spawnZ - 20 || Math.abs(eb.x) > WORLD.xBound + 22) {
+                    scene.remove(eb.mesh);
+                    enemyBullets.splice(i, 1);
+                }
+            }
+
+            // Update 3D Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.age += dt;
+
+                if (e.type === 'SCOUT') {
+                    e.x += Math.sin(e.age * 3.5) * 22 * dt;
+                    e.z += e.vz * dt;
+                } else if (e.type === 'INTERCEPTOR') {
+                    const dir = Math.sign(player.x - e.x);
+                    e.x += dir * 14 * dt;
+                    e.z += e.vz * dt;
+                    e.mesh.rotation.z = -dir * 0.4;
+                } else if (e.type === 'CRUISER') {
+                    e.x += e.vx * dt;
+                    e.z += e.vz * dt;
+                    if (Math.abs(e.x) > WORLD.xBound - 4) e.vx *= -1;
+                } else if (e.type === 'BOSS') {
+                    if (e.z < -52) {
+                        e.z += e.vz * dt;
+                    } else {
+                        e.x += e.vx * dt;
+                        if (Math.abs(e.x) > WORLD.xBound - 10) e.vx *= -1;
+                    }
+                    if (e.mesh.userData.gyroPart) {
+                        e.mesh.userData.gyroPart.rotation.z += dt * 2.5;
+                        e.mesh.userData.gyroPart.rotation.x = Math.sin(e.age * 2) * 0.35;
+                    }
+                }
+
+                e.x = Math.max(-WORLD.xBound, Math.min(WORLD.xBound, e.x));
+                e.mesh.position.set(e.x, e.y, e.z);
+                if (e.mesh.userData.spinPart) {
+                    e.mesh.userData.spinPart.rotation.y += dt * 3.2;
+                }
+
+                // Enemy Weapon Fire
+                e.shootTimer -= dt;
+                if (e.shootTimer <= 0 && e.z > WORLD.spawnZ + 20 && e.z < player.z - 6) {
+                    if (e.type === 'SCOUT') {
+                        e.shootTimer = 2.0;
+                        spawnEnemyBullet(e.x, e.z + 2, 0, 52, 0xff007f);
+                    } else if (e.type === 'INTERCEPTOR') {
+                        e.shootTimer = 1.5;
+                        const ang = Math.atan2(player.x - e.x, player.z - e.z);
+                        spawnEnemyBullet(e.x, e.z + 2, Math.sin(ang) * 58, Math.cos(ang) * 58, 0xff007f);
+                    } else if (e.type === 'CRUISER') {
+                        e.shootTimer = 1.75;
+                        [-0.32, 0, 0.32].forEach(offset => {
+                            spawnEnemyBullet(
+                                e.x,
+                                e.z + 3,
+                                Math.sin(offset) * 50,
+                                Math.cos(offset) * 50,
+                                0xffbe0b,
+                                1.05
+                            );
+                        });
+                    } else if (e.type === 'BOSS') {
+                        e.shootTimer = 0.9;
+                        const count = 7;
+                        for (let k = 0; k < count; k++) {
+                            const spread = -0.65 + (k / (count - 1)) * 1.3 + Math.sin(e.age * 2) * 0.2;
+                            spawnEnemyBullet(
+                                e.x,
+                                e.z + 5,
+                                Math.sin(spread) * 56,
+                                Math.cos(spread) * 56,
+                                0xff0055,
+                                1.15
+                            );
+                        }
+                    }
+                }
+
+                // Check Player Laser Hits vs Enemy
+                let destroyed = false;
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const b = bullets[j];
+                    if (Math.hypot(b.x - e.x, b.z - e.z) < e.radius + b.radius) {
+                        scene.remove(b.mesh);
+                        bullets.splice(j, 1);
+                        e.hp -= b.dmg;
+                        sound.playHit();
+
+                        if (e.type === 'BOSS') updateBossHUD(e.hp, e.maxHp);
+
+                        if (e.hp <= 0) {
+                            handleEnemyDefeat(e, i);
+                            destroyed = true;
+                            break;
+                        }
+                    }
+                }
+                if (destroyed) continue;
+
+                // Enemy vs Player Ship Collision
+                if (player.invulnTimer <= 0 && Math.hypot(e.x - player.x, e.z - player.z) < e.radius + player.radius - 0.5) {
+                    damagePlayer();
+                    if (e.type !== 'BOSS') {
+                        create3DExplosion(e.x, e.y, e.z, e.colorHex, 18, false);
+                        scene.remove(e.mesh);
+                        enemies.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                // Recycle enemy back to deep space if it passes behind camera
+                if (e.z > WORLD.despawnZ) {
+                    e.z = WORLD.spawnZ;
+                    e.x = (Math.random() - 0.5) * (WORLD.xBound * 1.7);
+                }
+            }
+
+            // Update 3D Power-Up Holocrons
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const p = powerUps[i];
+                p.z += p.vz * dt;
+                p.mesh.position.set(p.x, p.y, p.z);
+                p.mesh.rotation.y += dt * 3;
+                p.mesh.rotation.x += dt * 2;
+
+                if (Math.hypot(p.x - player.x, p.z - player.z) < p.radius + player.radius) {
+                    sound.playPowerUp();
+                    Haptics.powerUp();
+                    if (p.id === 'WEAPON') {
+                        player.weaponLevel = Math.min(4, player.weaponLevel + 1);
+                        addFloatingText3D(player.x, player.y + 2, player.z, 'WEAPON OVERDRIVE!', '#39ff14');
+                    } else if (p.id === 'SHIELD') {
+                        player.shields = Math.min(player.maxShields, player.shields + 1);
+                        addFloatingText3D(player.x, player.y + 2, player.z, 'SHIELD RESTORED!', '#00f3ff');
+                    } else if (p.id === 'BOMB') {
+                        player.bombs = Math.min(3, player.bombs + 1);
+                        addFloatingText3D(player.x, player.y + 2, player.z, 'NOVA EMP +1', '#ffbe0b');
+                    }
+                    state.score += 250;
+                    updateHUD();
+                    scene.remove(p.mesh);
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+
+                if (p.z > WORLD.despawnZ) {
+                    scene.remove(p.mesh);
+                    powerUps.splice(i, 1);
+                }
+            }
+
+            // Update 3D Volumetric Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const pt = particles[i];
+                pt.mesh.position.x += pt.vx * dt;
+                pt.mesh.position.y += pt.vy * dt;
+                pt.mesh.position.z += pt.vz * dt;
+                pt.mesh.rotation.x += dt * 5;
+                pt.mesh.rotation.y += dt * 5;
+                pt.life -= dt;
+
+                const alpha = Math.max(0, pt.life / pt.maxLife);
+                pt.mesh.material.opacity = alpha;
+                pt.mesh.scale.setScalar(alpha);
+
+                if (pt.life <= 0) {
+                    scene.remove(pt.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update Expanding 3D Shockwave Rings
+            for (let i = empShockwaves.length - 1; i >= 0; i--) {
+                const sw = empShockwaves[i];
+                sw.life -= dt;
+                const scale = 1 + (1 - sw.life / sw.maxLife) * sw.rate;
+                sw.mesh.scale.setScalar(scale);
+                sw.mesh.material.opacity = Math.max(0, sw.life / sw.maxLife);
+                if (sw.life <= 0) {
+                    scene.remove(sw.mesh);
+                    empShockwaves.splice(i, 1);
+                }
+            }
+
+            // Update Projected 3D-to-2D Floating Combat Text
+            const projVec = new THREE.Vector3();
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y += 6 * dt;
+                ft.life -= dt;
+
+                projVec.set(ft.x, ft.y, ft.z);
+                projVec.project(camera);
+
+                const screenX = (projVec.x * 0.5 + 0.5) * state.width;
+                const screenY = (-projVec.y * 0.5 + 0.5) * state.height;
+
+                ft.el.style.left = `${screenX}px`;
+                ft.el.style.top = `${screenY}px`;
+                ft.el.style.opacity = String(Math.max(0, ft.life / ft.maxLife));
+
+                if (ft.life <= 0) {
+                    ft.el.remove();
+                    floatingTexts.splice(i, 1);
+                }
+            }
+        }
+
+        // --- 9. GAME FLOW CONTROLLERS & CLEANUP ---
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSubtitle = document.getElementById('modal-subtitle');
+        const modalBadge = document.getElementById('modal-badge');
+        const modalStats = document.getElementById('modal-stats');
+        const btnModalPrimary = document.getElementById('btn-modal-primary');
+        const btnModalRestart = document.getElementById('btn-modal-restart');
+
+        function clearEntities3D() {
+            if (player) player.destroy();
+            bullets.forEach(b => scene.remove(b.mesh));
+            enemyBullets.forEach(eb => scene.remove(eb.mesh));
+            enemies.forEach(e => scene.remove(e.mesh));
+            particles.forEach(pt => scene.remove(pt.mesh));
+            powerUps.forEach(p => scene.remove(p.mesh));
+            empShockwaves.forEach(sw => scene.remove(sw.mesh));
+            floatingTexts.forEach(ft => ft.el.remove());
+
+            bullets = [];
+            enemyBullets = [];
+            enemies = [];
+            particles = [];
+            powerUps = [];
+            empShockwaves = [];
+            floatingTexts = [];
+        }
+
+        function startNewGame() {
+            sound.init();
+            resizeCanvas();
+            clearEntities3D();
+
+            state.score = 0;
+            state.level = 1;
+            state.combo = 1.0;
+            state.comboTimer = 0;
+            state.waveEnemiesRemaining = 12;
+            state.bossActive = false;
+            state.mode = 'PLAYING';
+
+            player = new Player3D();
+
+            document.getElementById('boss-hud').classList.add('hidden');
+            modalOverlay.classList.add('hidden');
+            updatePauseButtonUI();
+            updateHUD();
+            showSectorBanner('SECTOR 01', 'ENGAGE 3D HOSTILE ARMADA');
+        }
+
+        function togglePause() {
+            if (state.mode === 'PLAYING') {
+                state.mode = 'PAUSED';
+                modalBadge.innerHTML = '<i class="fa-solid fa-pause"></i> SYSTEM STANDBY';
+                modalTitle.textContent = 'MISSION PAUSED';
+                modalSubtitle.textContent = 'Take a breather, Commander. Your 3D interceptor is holding position.';
+                modalStats.classList.add('hidden');
+                btnModalPrimary.innerHTML = '<i class="fa-solid fa-play"></i> RESUME MISSION';
+                btnModalRestart.classList.remove('hidden');
+                modalOverlay.classList.remove('hidden');
+            } else if (state.mode === 'PAUSED') {
+                state.mode = 'PLAYING';
+                modalOverlay.classList.add('hidden');
+            }
+            updatePauseButtonUI();
+        }
+
+        function triggerGameOver() {
+            state.mode = 'GAMEOVER';
+            sound.playGameOver();
+
+            modalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> HULL BREACH DETECTED';
+            modalTitle.textContent = 'MISSION FAILED';
+            modalSubtitle.textContent = 'Your 3D interceptor was overwhelmed by the sector armada.';
+            document.getElementById('stat-final-score').textContent = Math.floor(state.score).toLocaleString();
+            document.getElementById('stat-final-level').textContent = `SECTOR ${state.level}`;
+            modalStats.classList.remove('hidden');
+
+            btnModalPrimary.innerHTML = '<i class="fa-solid fa-rotate-right"></i> LAUNCH AGAIN';
+            btnModalRestart.classList.add('hidden');
+            modalOverlay.classList.remove('hidden');
+            updatePauseButtonUI();
+        }
+
+        function updatePauseButtonUI() {
+            const icon = document.getElementById('icon-pause');
+            const text = document.getElementById('text-pause');
+            if (state.mode === 'PAUSED') {
+                icon.className = 'fa-solid fa-play';
+                text.textContent = 'RESUME';
+            } else {
+                icon.className = 'fa-solid fa-pause';
+                text.textContent = 'PAUSE';
+            }
+        }
+
+        function cycleCameraMode() {
+            state.cameraModeIndex = (state.cameraModeIndex + 1) % CAMERA_MODES.length;
+            state.camOrbitYaw = 0;
+            state.camOrbitPitch = 0;
+            const modeName = CAMERA_MODES[state.cameraModeIndex];
+            document.getElementById('text-camera').textContent = `CAM: ${modeName}`;
+            document.getElementById('hud-cam-label').textContent = `CAM: ${modeName} 3D (DRAG RIGHT-CLICK OR PRESS C)`;
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            const rect = wrapper.getBoundingClientRect();
+            state.width = rect.width;
+            state.height = rect.height;
+            if (renderer && camera) {
+                renderer.setSize(state.width, state.height);
+                camera.aspect = state.width / state.height;
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        // --- 10. INPUT LISTENERS (KEYBOARD, MOUSE, CAMERA ORBIT, TOUCH) ---
+        window.addEventListener('resize', resizeCanvas);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code in keys) {
+                keys[e.code] = true;
+                if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+            }
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                if (state.mode === 'PLAYING' || state.mode === 'PAUSED') togglePause();
+            } else if (e.code === 'KeyR') {
+                startNewGame();
+            } else if (e.code === 'KeyB' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                triggerNovaBomb();
+            } else if (e.code === 'KeyC') {
+                cycleCameraMode();
+            } else if (e.code === 'KeyM') {
+                toggleAudioUI();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code in keys) keys[e.code] = false;
+        });
+
+        // Map screen pointer coordinates onto 3D combat plane (Y = 0)
+        const raycaster = new THREE.Raycaster();
+        const combatPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const intersectPt = new THREE.Vector3();
+
+        function updatePointer3D(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            pointer.ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera({ x: pointer.ndcX, y: pointer.ndcY }, camera);
+            if (raycaster.ray.intersectPlane(combatPlane, intersectPt)) {
+                pointer.worldX = Math.max(-WORLD.xBound, Math.min(WORLD.xBound, intersectPt.x));
+                pointer.worldZ = Math.max(WORLD.zMin, Math.min(WORLD.zMax, intersectPt.z - 4));
+            }
+        }
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 2 || e.shiftKey) {
+                // Right-click or Shift+Drag adjusts 3D camera orbit angle
+                state.isOrbitDragging = true;
+                state.orbitLastX = e.clientX;
+                state.orbitLastY = e.clientY;
+            } else {
+                pointer.active = true;
+                updatePointer3D(e.clientX, e.clientY);
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (state.isOrbitDragging) {
+                const dx = e.clientX - state.orbitLastX;
+                const dy = e.clientY - state.orbitLastY;
+                state.orbitLastX = e.clientX;
+                state.orbitLastY = e.clientY;
+                state.camOrbitYaw = Math.max(-0.85, Math.min(0.85, state.camOrbitYaw - dx * 0.006));
+                state.camOrbitPitch = Math.max(-0.6, Math.min(0.8, state.camOrbitPitch + dy * 0.006));
+            } else if (pointer.active) {
+                updatePointer3D(e.clientX, e.clientY);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            pointer.active = false;
+            state.isOrbitDragging = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            sound.init();
+            pointer.active = true;
+            const touch = e.touches[0];
+            updatePointer3D(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (pointer.active && e.touches.length > 0) {
+                const touch = e.touches[0];
+                updatePointer3D(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            pointer.active = false;
+        }, { passive: false });
+
+        // UI Button Listeners
+        btnModalPrimary.addEventListener('click', () => {
+            if (state.mode === 'PAUSED') {
+                togglePause();
+            } else {
+                startNewGame();
+            }
+        });
+
+        btnModalRestart.addEventListener('click', startNewGame);
+        document.getElementById('btn-pause').addEventListener('click', togglePause);
+        document.getElementById('btn-restart').addEventListener('click', startNewGame);
+        document.getElementById('btn-bomb').addEventListener('click', triggerNovaBomb);
+        document.getElementById('btn-camera').addEventListener('click', cycleCameraMode);
+
+        document.getElementById('btn-autofire').addEventListener('click', () => {
+            state.autoFire = !state.autoFire;
+            document.getElementById('text-autofire').textContent = `AUTOFIRE: ${state.autoFire ? 'ON' : 'OFF'}`;
+            document.getElementById('touch-fire-label').textContent = state.autoFire ? 'AUTO' : 'FIRE';
+        });
+
+        function toggleAudioUI() {
+            const on = sound.toggle();
+            document.getElementById('icon-sound').className = on
+                ? 'fa-solid fa-volume-high text-cyan-300'
+                : 'fa-solid fa-volume-xmark text-rose-400';
+            document.getElementById('text-sound').textContent = `AUDIO: ${on ? 'ON' : 'OFF'}`;
+        }
+        document.getElementById('btn-sound').addEventListener('click', toggleAudioUI);
+
+        // --- 10B. NATIVE APP CONTROLS: VIRTUAL THUMBSTICK, ACTION PAD, FULLSCREEN & MODALS ---
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickStick = document.getElementById('joystick-stick');
+        const joystickContainer = document.getElementById('joystick-container');
+
+        function handleJoystickMove(clientX, clientY) {
+            const rect = joystickBase.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            let dx = clientX - centerX;
+            let dy = clientY - centerY;
+            const dist = Math.hypot(dx, dy);
+            const maxR = joystick.maxRadius;
+
+            if (dist > maxR) {
+                dx = (dx / dist) * maxR;
+                dy = (dy / dist) * maxR;
+            }
+
+            joystickStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            joystick.vx = dx / maxR;
+            joystick.vz = dy / maxR;
+        }
+
+        function resetJoystick() {
+            joystick.active = false;
+            joystick.touchId = null;
+            joystick.vx = 0;
+            joystick.vz = 0;
+            joystickStick.style.transform = 'translate(-50%, -50%)';
+        }
+
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sound.init();
+            const touch = e.changedTouches[0];
+            joystick.active = true;
+            joystick.touchId = touch.identifier;
+            handleJoystickMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        joystickBase.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystick.touchId) {
+                    handleJoystickMove(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        joystickBase.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystick.touchId) {
+                    resetJoystick();
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        // Mouse support on Virtual Thumbstick for desktop testing
+        joystickBase.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            sound.init();
+            joystick.active = true;
+            handleJoystickMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (joystick.active && joystick.touchId === null) {
+                handleJoystickMove(e.clientX, e.clientY);
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            if (joystick.active && joystick.touchId === null) {
+                resetJoystick();
+            }
+        });
+
+        // Tactile On-Screen Right Action Pad
+        document.getElementById('touch-btn-cam').addEventListener('click', (e) => {
+            e.stopPropagation();
+            Haptics.hit();
+            cycleCameraMode();
+        });
+        document.getElementById('touch-btn-emp').addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerNovaBomb();
+        });
+        document.getElementById('touch-btn-fire').addEventListener('click', (e) => {
+            e.stopPropagation();
+            Haptics.hit();
+            state.autoFire = !state.autoFire;
+            document.getElementById('text-autofire').textContent = `AUTOFIRE: ${state.autoFire ? 'ON' : 'OFF'}`;
+            document.getElementById('touch-fire-label').textContent = state.autoFire ? 'AUTO' : 'FIRE';
+            showAppToast(`AUTOFIRE: ${state.autoFire ? 'LOCKED ON' : 'MANUAL'}`);
+        });
+
+        // Fullscreen App Mode Toggle
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+                document.getElementById('icon-fullscreen').className = 'fa-solid fa-compress';
+            } else {
+                document.exitFullscreen().catch(() => {});
+                document.getElementById('icon-fullscreen').className = 'fa-solid fa-expand';
+            }
+        });
+
+        // Settings Drawer Modal Controls
+        const settingsModal = document.getElementById('settings-modal');
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            if (state.mode === 'PLAYING') togglePause();
+            settingsModal.classList.remove('hidden');
+        });
+        document.getElementById('btn-close-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+        document.getElementById('btn-save-settings').addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+            showAppToast('SETTINGS UPDATED');
+        });
+
+        document.getElementById('setting-volume').addEventListener('input', (e) => {
+            const pct = parseInt(e.target.value, 10);
+            document.getElementById('setting-vol-label').textContent = `${pct}%`;
+            sound.setVolume(pct / 100);
+        });
+
+        document.getElementById('setting-control-mode').addEventListener('click', (e) => {
+            const modes = ['BOTH', 'JOYSTICK', 'DRAG'];
+            const labels = { BOTH: 'JOYSTICK + DRAG', JOYSTICK: 'THUMBSTICK ONLY', DRAG: 'TOUCH DRAG ONLY' };
+            const nextIdx = (modes.indexOf(appSettings.controlMode) + 1) % modes.length;
+            appSettings.controlMode = modes[nextIdx];
+            e.currentTarget.textContent = labels[appSettings.controlMode];
+            joystickContainer.style.display = appSettings.controlMode === 'DRAG' ? 'none' : 'flex';
+        });
+
+        document.getElementById('setting-haptics').addEventListener('click', (e) => {
+            appSettings.haptics = !appSettings.haptics;
+            e.currentTarget.textContent = `HAPTICS: ${appSettings.haptics ? 'ON' : 'OFF'}`;
+            if (appSettings.haptics) Haptics.hit();
+        });
+
+        document.getElementById('setting-graphics').addEventListener('click', (e) => {
+            appSettings.graphicsUltra = !appSettings.graphicsUltra;
+            e.currentTarget.textContent = appSettings.graphicsUltra ? 'ULTRA (HD)' : 'BALANCED (60FPS)';
+            if (renderer) {
+                renderer.setPixelRatio(appSettings.graphicsUltra ? Math.min(window.devicePixelRatio, 2) : 1);
+            }
+        });
+
+        // Install Native PWA / APK Guide Modal Controls
+        const installModal = document.getElementById('install-modal');
+        document.getElementById('btn-install-app').addEventListener('click', () => {
+            if (state.mode === 'PLAYING') togglePause();
+            installModal.classList.remove('hidden');
+        });
+        document.getElementById('btn-close-install').addEventListener('click', () => installModal.classList.add('hidden'));
+        document.getElementById('btn-done-install').addEventListener('click', () => installModal.classList.add('hidden'));
+
+        document.getElementById('btn-trigger-pwa-install').addEventListener('click', async () => {
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                const { outcome } = await deferredInstallPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    showAppToast('NOVA STRIKE 3D INSTALLED!');
+                    installModal.classList.add('hidden');
+                }
+                deferredInstallPrompt = null;
+            } else {
+                showAppToast('USE BROWSER MENU -> ADD TO HOME SCREEN');
+            }
+        });
+
+        // --- 11. ANIMATION LOOP ---
+        let lastTime = performance.now();
+        function gameLoop(now) {
+            const dt = Math.min(0.05, (now - lastTime) / 1000);
+            lastTime = now;
+
+            updateGame(dt);
+            renderer.render(scene, camera);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            bootstrapPWA();
+            resizeCanvas();
+            initThreeJS();
+            player = new Player3D();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
